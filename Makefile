@@ -3,6 +3,7 @@ CC := gcc
 CCFLAG :=
 DBGFLAG := -g
 CCOBJFLAG := $(CCFLAG) -c
+LIBS := -lcoap-2-openssl
 
 # path marcros
 BIN_PATH := bin
@@ -36,7 +37,7 @@ default: all
 
 # non-phony targets
 $(TARGET): $(OBJ)
-	$(CC) $(CCFLAG) -o $@ $?
+	$(CC) $(CCFLAG) $(LIBS) -o $@ $?
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CC) $(CCOBJFLAG) -o $@ $<
@@ -45,7 +46,7 @@ $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CC) $(CCOBJFLAG) $(DBGFLAG) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CCFLAG) $(DBGFLAG) $? -o $@
+	$(CC) $(CCFLAG) $(DBGFLAG) $(LIBS) $? -o $@
 
 # phony rules
 .PHONY: all
