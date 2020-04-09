@@ -1,0 +1,46 @@
+[
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/argparse.o",
+   "src/argparse.c"
+  ],
+  "file": "src/argparse.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/log.o",
+   "src/log.c"
+  ],
+  "file": "src/log.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/main.o",
+   "src/main.c"
+  ],
+  "file": "src/main.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/signal_channel.o",
+   "src/signal_channel.c"
+  ],
+  "file": "src/signal_channel.c"
+ }
+]
