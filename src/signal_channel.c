@@ -8,9 +8,16 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include "preconditions.h"
+#include "signal_channel_handlers.h"
 #include "dots_dtls.h"
 
-int connectSignalChannel(struct dots_client_context *client_context) {
+void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
+    if (cxt) {
+        coap_free_context(cxt);
+    }
+    coap_cleanup();
+}
+int connect_signal_channel(struct dots_client_context *client_context) {
     coap_context_t* cxt;
     coap_session_t* sess;
     coap_session_t* oSess;
@@ -52,9 +59,13 @@ int connectSignalChannel(struct dots_client_context *client_context) {
                 client_context->psk,
                 strlen(client_context->psk));
     } else {
-
+        panic("Asymmetric encryption is not supported at the moment!");
     }
 
+    // Create resource for heartbeat mechanism from server
+    coap_resource_t* heartbeat_resource = coap_resource_unknown_init(NULL);
+    check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
+    coap_add_resource(cxt, heartbeat_resource);
 
     return 1;
 }

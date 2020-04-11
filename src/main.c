@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     }
 
     log_info("Server address: %s", client_context->server_addr);
-    connectSignalChannel(client_context);
+    connect_signal_channel(client_context);
 
     free(client_context);
     return 0;
