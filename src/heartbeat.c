@@ -34,6 +34,7 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
     int map_size = cbor_map_size(item);
     if (map_size != 1) {
         log_error("Heartbeat is invalid! Top level map size is %i, expecting 1!", map_size);
+        cbor_decref(&item);
         return 0;
     }
 
@@ -41,18 +42,21 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
     int heartbeat_key = cbor_get_int(heartbeat_pair->key);
     if (heartbeat_key != CBOR_HEARTBEAKT_KEY) {
         log_error("Heartbeat has key of %i, expecting %i", heartbeat_key, CBOR_HEARTBEAKT_KEY);
+        cbor_decref(&item);
         return 0;
     }
 
     map_size = cbor_map_size(heartbeat_pair->value);
     if (map_size != 0) {
         log_error("Heartbeat is invalid! Nested map inside of heartbeat has size %i, expecting 1!", map_size);
+        cbor_decref(&item);
         return 0;
     }
 
     struct cbor_pair *status_pair = cbor_map_handle(heartbeat_pair->value);
     if (cbor_get_int(status_pair->key) != CBOR_PEER_HB_STATUS_KEY || cbor_get_bool(status_pair->value) != true) {
         log_error("Peer hb status doesn't exists or it is not true!");
+        cbor_decref(&item);
         return 0;
     }
 
