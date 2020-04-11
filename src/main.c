@@ -5,6 +5,7 @@
 #include "client_context.h"
 #include "signal_channel.h"
 #include "preconditions.h"
+#include "task_env.h"
 
 static const char *const usage[] = {
         "dots_client [options] [[--] args]",
@@ -55,7 +56,9 @@ int main(int argc, char **argv) {
     }
 
     log_info("Server address: %s", client_context->server_addr);
-    connect_signal_channel(client_context);
+
+    dots_set_client_context(client_context);
+    connect_signal_channel(NULL);
 
     free(client_context);
     return 0;

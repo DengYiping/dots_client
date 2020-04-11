@@ -6,6 +6,8 @@
 #define DOTS_CLIENT_SIGNAL_CHANNEL_H
 
 #include "client_context.h"
-int connect_signal_channel(struct dots_client_context* client_context);
+#include "task_env.h"
+
+int connect_signal_channel(dots_task_env* org_env);
 
 #endif //DOTS_CLIENT_SIGNAL_CHANNEL_H

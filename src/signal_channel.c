@@ -9,20 +9,23 @@
 #include <arpa/inet.h>
 #include "preconditions.h"
 #include "signal_channel_handlers.h"
-#include "dots_dtls.h"
+#include "task_env.h"
 
 static void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
+    coap_session_release(sess);
     if (cxt) {
         coap_free_context(cxt);
     }
     coap_cleanup();
 }
-int connect_signal_channel(struct dots_client_context *client_context) {
-    coap_context_t* cxt;
+int connect_signal_channel(dots_task_env* org_env) {
+    coap_context_t* ctx;
     coap_session_t* sess;
-    coap_session_t* oSess;
+    coap_session_t* o_sess;
     coap_address_t* addr;
     coap_startup();
+
+    dots_client_context* client_context = dots_get_client_context();
 
     if (log_get_level() <= LOG_LEVEL_DEBUG) {
         coap_dtls_set_log_level(LOG_DEBUG);
@@ -47,11 +50,11 @@ int connect_signal_channel(struct dots_client_context *client_context) {
 
     if (client_context->psk != NULL && strlen(client_context->psk) > 0) {
         check_valid(client_context->identity, "Identity must be present when using PSK!");
-        cxt = coap_new_context(addr);
-        check_valid(cxt != NULL, "Cannot create a CoAP context");
+        ctx = coap_new_context(addr);
+        check_valid(ctx != NULL, "Cannot create a CoAP context");
 
         sess = coap_new_client_session_psk(
-                cxt,
+                ctx,
                 NULL,
                 addr,
                 COAP_PROTO_DTLS,
@@ -62,10 +65,25 @@ int connect_signal_channel(struct dots_client_context *client_context) {
         panic("Asymmetric encryption is not supported at the moment!");
     }
 
+
     // Create resource for heartbeat mechanism from server
     coap_resource_t* heartbeat_resource = coap_resource_unknown_init(heartbeat_handler);
     check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
-    coap_add_resource(cxt, heartbeat_resource);
+    coap_add_resource(ctx, heartbeat_resource);
+
+    dots_task_env* env;
+    if (org_env == NULL) {
+        env = dots_new_env(ctx, sess);
+    } else {
+        o_sess = org_env->curr_sess;
+        env = org_env;
+    }
+
+    dots_set_env(env);
+    dots_set_org_env(org_env);
+    dots_set_o_sess(o_sess);
+
+    coap_register_event_handler(ctx, event_handler);
 
     return 1;
 }
