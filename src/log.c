@@ -81,6 +81,10 @@ void log_set_level(int level) {
   L.level = level;
 }
 
+int log_get_level() {
+    return L.level;
+}
+
 
 void log_set_quiet(int enable) {
   L.quiet = enable ? 1 : 0;
