@@ -5,8 +5,7 @@
 #include "dots_dtls.h"
 #include "preconditions.h"
 #include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#
+#include <openssl/pem.h>
 
 typedef struct coap_strlist_t {
     struct coap_strlist_t *next;
@@ -51,6 +50,8 @@ struct coap_context_t* new_context_dtls(coap_address_t* addr, dtls_params* param
         default:
             panic("Peer type is not supported!");
     }
+
+    return ctx;
 }
 
 coap_strlist_t* get_domain_name_from_certificate_file(char* certificate_fname) {
@@ -62,10 +63,17 @@ coap_strlist_t* get_domain_name_from_certificate_file(char* certificate_fname) {
 
     X509* cert = PEM_read_X509(fp, NULL, NULL, NULL);
     check_valid(cert, "unable to parse certificate in: %s", certificate_fname);
-    // any additional processing would go here..
+
+    X509_NAME* subj = X509_get_subject_name(cert);
+    for (int i = 0; i < X509_NAME_entry_count(subj); i++) {
+        X509_NAME_ENTRY *e = X509_NAME_get_entry(subj, i);
+        ASN1_STRING *d = X509_NAME_ENTRY_get_data(e);
+        char *str = ASN1_STRING_data(d);
+    }
 
     X509_free(cert);
     fclose(fp);
+    return NULL;
 }
 
 
