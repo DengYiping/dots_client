@@ -63,7 +63,7 @@ int connect_signal_channel(struct dots_client_context *client_context) {
     }
 
     // Create resource for heartbeat mechanism from server
-    coap_resource_t* heartbeat_resource = coap_resource_unknown_init(NULL);
+    coap_resource_t* heartbeat_resource = coap_resource_unknown_init(heartbeat_handler);
     check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
     coap_add_resource(cxt, heartbeat_resource);
 

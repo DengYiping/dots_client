@@ -33,4 +33,6 @@ void heartbeat_handler(
         response->code = ResponseChanged;
         response->type = COAP_MESSAGE_NON;
     }
+
+    // TODO: setIsReceivedHeartBeat
 }
