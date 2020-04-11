@@ -64,5 +64,16 @@
    "src/signal_channel_handlers.c"
   ],
   "file": "src/signal_channel_handlers.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/heartbeat.o",
+   "src/heartbeat.c"
+  ],
+  "file": "src/heartbeat.c"
  }
 ]

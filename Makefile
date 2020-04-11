@@ -3,7 +3,7 @@ CC := gcc
 CCFLAG :=
 DBGFLAG := -g
 CCOBJFLAG := $(CCFLAG) -c
-LIBS := -lcoap-2-openssl -lssl -lcrypto
+LIBS := -lcoap-2-openssl -lssl -lcrypto -lcbor
 
 # path marcros
 BIN_PATH := bin

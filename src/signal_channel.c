@@ -11,7 +11,7 @@
 #include "signal_channel_handlers.h"
 #include "dots_dtls.h"
 
-void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
+static void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
     if (cxt) {
         coap_free_context(cxt);
     }
