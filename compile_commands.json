@@ -42,5 +42,16 @@
    "src/signal_channel.c"
   ],
   "file": "src/signal_channel.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/dots_dtls.o",
+   "src/dots_dtls.c"
+  ],
+  "file": "src/dots_dtls.c"
  }
 ]
