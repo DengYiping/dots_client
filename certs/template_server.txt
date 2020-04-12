@@ -1,0 +1,15 @@
+# X.509 server certificate options
+
+organization = "sample server"
+state = "Tokyo"
+country = JP
+cn = "server.sample.example.com"
+expiration_days = 1095
+
+# X.509 v3 extensions
+signing_key
+encryption_key
+
+# DNS name(s) of the server
+dns_name = "xample1.example.com"
+dns_name = "_xampp.example.com
