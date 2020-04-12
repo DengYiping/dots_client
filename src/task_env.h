@@ -5,7 +5,7 @@
 #ifndef DOTS_CLIENT_TASK_ENV_H
 #define DOTS_CLIENT_TASK_ENV_H
 #include <coap2/coap.h>
-#include "client_context.h"
+#include "client_config.h"
 #include "map.h"
 
 
@@ -16,7 +16,7 @@ typedef struct dots_task_env {
 } dots_task_env;
 
 dots_task_env* dots_new_env(struct coap_context_t* ctx, struct coap_session_t* sess);
-void dots_set_client_context(dots_client_context* ctx);
+void dots_set_client_config(dots_client_config* ctx);
 
-dots_client_context* dots_get_client_context();
+dots_client_config* dots_get_client_config();
 #endif //DOTS_CLIENT_TASK_ENV_H

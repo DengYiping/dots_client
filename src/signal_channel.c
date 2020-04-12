@@ -9,6 +9,7 @@
 #include "preconditions.h"
 #include "signal_channel_handlers.h"
 #include "task_env.h"
+#include "utils.h"
 
 static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     if (sess) {
@@ -23,35 +24,18 @@ static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
 dots_task_env *connect_signal_channel(dots_task_env *org_env) {
     coap_context_t *ctx;
     coap_session_t *sess;
-
     // coap_session_t *o_sess;
-
     coap_address_t *addr;
 
+    dots_client_config *client_context = dots_get_client_config();
     coap_startup();
-
-    dots_client_context *client_context = dots_get_client_context();
 
     if (log_get_level() <= LOG_LEVEL_DEBUG) {
         coap_dtls_set_log_level(LOG_DEBUG);
         coap_set_log_level(LOG_DEBUG);
     }
 
-    addr = malloc(sizeof(struct coap_address_t));
-    memset(addr, 0, sizeof(struct coap_address_t));
-    coap_address_init(addr);
-    struct sockaddr_in *sin = &(addr->addr.sin);
-
-    // IPv4
-    addr->size = sizeof(struct sockaddr_in);
-    check_valid(
-            inet_pton(AF_INET, client_context->server_addr, sin),
-            "Address %s is not a valid IPv4 address!",
-            client_context->server_addr);
-
-    sin->sin_port = htons(client_context->server_port);
-    sin->sin_family = AF_INET;
-    // TODO: IPv6 support
+    addr = resolve_address(client_context->server_addr, client_context->server_port);
 
     if (client_context->psk != NULL && strlen(client_context->psk) > 0) {
         check_valid(client_context->identity, "Identity must be present when using PSK!");

@@ -86,5 +86,27 @@
    "src/task_env.c"
   ],
   "file": "src/task_env.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/messages.o",
+   "src/messages.c"
+  ],
+  "file": "src/messages.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/utils.o",
+   "src/utils.c"
+  ],
+  "file": "src/utils.c"
  }
 ]

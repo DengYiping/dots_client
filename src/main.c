@@ -2,7 +2,7 @@
 #include "argparse.h"
 #include <stdlib.h>
 #include <string.h>
-#include "client_context.h"
+#include "client_config.h"
 #include "signal_channel.h"
 #include "preconditions.h"
 #include "task_env.h"
@@ -16,10 +16,10 @@ static const char *const usage[] = {
 #define DEBUG_MODE (1<<0)
 
 int main(int argc, char **argv) {
-    dots_client_context *client_context = malloc(sizeof(dots_client_context));
-    memset(client_context, 0, sizeof(dots_client_context));
+    dots_client_config *client_context = malloc(sizeof(dots_client_config));
+    memset(client_context, 0, sizeof(dots_client_config));
     client_context->server_addr = "127.0.0.1";
-    client_context->server_port = -1;
+    client_context->server_port = "5683";
 
     int flags = 0;
 
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     struct argparse_option options[] = {
             OPT_HELP(),
             OPT_STRING('s', "server", &(client_context->server_addr), "server address"),
-            OPT_INTEGER('p', "port", &(client_context->server_port), "server port number"),
+            OPT_STRING('p', "port", &(client_context->server_port), "server port number"),
             OPT_BIT(0, "debug", &flags, "debug mode", NULL, DEBUG_MODE, OPT_NONEG),
             OPT_GROUP("PSK"),
             OPT_STRING(0, "psk", &(client_context->psk), "DTLS PSK"),
@@ -46,18 +46,15 @@ int main(int argc, char **argv) {
             "It can be used to signal ongoing DDoS attack!");
     argc = argparse_parse(&argparse, argc, argv);
 
-    // Arguments validation
-    check_valid(client_context->server_port != -1, "Server port is missing as arguments!");
-
     if (DEBUG_MODE & flags) {
         log_set_level(LOG_LEVEL_DEBUG);
     } else {
         log_set_level(LOG_LEVEL_INFO);
     }
 
-    log_info("Server address: %s", client_context->server_addr);
+    log_info("Server address: %s:%s", client_context->server_addr, client_context->server_port);
 
-    dots_set_client_context(client_context);
+    dots_set_client_config(client_context);
     dots_task_env* env = connect_signal_channel(NULL);
 
     while (1) {

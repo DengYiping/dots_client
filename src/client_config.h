@@ -2,12 +2,12 @@
 // Created by Yiping Deng on 4/9/20.
 //
 
-#ifndef DOTS_CLIENT_CLIENT_CONTEXT_H
-#define DOTS_CLIENT_CLIENT_CONTEXT_H
+#ifndef DOTS_CLIENT_CLIENT_CONFIG_H
+#define DOTS_CLIENT_CLIENT_CONFIG_H
 
-typedef struct dots_client_context {
+typedef struct dots_client_config {
     char* server_addr;
-    int server_port;
+    char* server_port;
 
     // DTLS psk and identity
     char* psk;
@@ -16,6 +16,6 @@ typedef struct dots_client_context {
     char* cert_file;
     char* client_cert_file;
     char* client_key_file;
-} dots_client_context;
+} dots_client_config;
 
-#endif //DOTS_CLIENT_CLIENT_CONTEXT_H
+#endif //DOTS_CLIENT_CLIENT_CONFIG_H

@@ -12,6 +12,7 @@ int connect_signal_channel(dots_task_env *org_env);
 static const char *const ERROR_MSG = "Invalid heartbeat!";
 
 static dots_task_env *curr_env = NULL;
+
 static dots_task_env *org_env = NULL;
 static struct coap_session_t *new_sess = NULL;
 static struct coap_session_t *o_sess = NULL;
@@ -47,6 +48,16 @@ static void handle_request_timeout(dots_task_env* env, coap_pdu_t* pdu) {
 }
 
 
+/**
+ * Handle active heartbeat requests send by the server
+ * @param ctx
+ * @param resource
+ * @param sess
+ * @param request
+ * @param token
+ * @param query
+ * @param response
+ */
 void heartbeat_handler(
         coap_context_t *ctx,
         struct coap_resource_t *resource,
@@ -55,7 +66,7 @@ void heartbeat_handler(
         coap_binary_t *token,
         coap_string_t *query,
         coap_pdu_t *response) {
-    log_info("Handle receive heartbeat from server.");
+    log_debug("Handle receive heartbeat from server.");
 
     size_t data_len;
     uint8_t *data;
@@ -76,7 +87,12 @@ void heartbeat_handler(
 }
 
 
-
+/**
+ * Handle events like DTLS connected and closed.
+ * @param ctx
+ * @param event
+ * @param sess
+ */
 void event_handler(struct coap_context_t *ctx,
                    coap_event_t event,
                    struct coap_session_t *sess) {
@@ -90,7 +106,6 @@ void event_handler(struct coap_context_t *ctx,
         restart_connection(curr_env);
     }
      */
-    static
     log_debug("New event received!");
 }
 
@@ -99,8 +114,8 @@ void response_handler(struct coap_context_t *context,
                       coap_pdu_t *sent,
                       coap_pdu_t *received,
                       const coap_tid_t id) {
+    log_debug("New response received!");
     if (coap_get_log_level() < LOG_DEBUG) {
-        log_debug("New response received!");
         coap_show_pdu(LOG_INFO, received);
     }
 
