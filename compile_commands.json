@@ -49,17 +49,6 @@
    "gcc",
    "-c",
    "-o",
-   "obj/dots_dtls.o",
-   "src/dots_dtls.c"
-  ],
-  "file": "src/dots_dtls.c"
- },
- {
-  "directory": "/Users/ydeng/thesis/dots_client",
-  "arguments": [
-   "gcc",
-   "-c",
-   "-o",
    "obj/signal_channel_handlers.o",
    "src/signal_channel_handlers.c"
   ],
@@ -75,5 +64,27 @@
    "src/heartbeat.c"
   ],
   "file": "src/heartbeat.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/map.o",
+   "src/map.c"
+  ],
+  "file": "src/map.c"
+ },
+ {
+  "directory": "/Users/ydeng/thesis/dots_client",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-o",
+   "obj/task_env.o",
+   "src/task_env.c"
+  ],
+  "file": "src/task_env.c"
  }
 ]
