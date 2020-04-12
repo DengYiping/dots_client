@@ -13,6 +13,7 @@ static const char *const ERROR_MSG = "Invalid heartbeat!";
 
 static dots_task_env *curr_env = NULL;
 static dots_task_env *org_env = NULL;
+static struct coap_session_t *new_sess = NULL;
 static struct coap_session_t *o_sess = NULL;
 
 void dots_set_env(dots_task_env *env) {
@@ -21,6 +22,10 @@ void dots_set_env(dots_task_env *env) {
 
 void dots_set_org_env(dots_task_env *env) {
     org_env = env;
+}
+
+void dots_set_new_sess(coap_session_t *sess) {
+    new_sess = sess;
 }
 
 void dots_set_o_sess(coap_session_t *sess) {
@@ -89,5 +94,20 @@ void response_handler(struct coap_context_t *context,
     handle_response(curr_env, received);
     if (received != NULL && o_sess != NULL && o_sess == curr_env->curr_sess) {
 
+    }
+}
+
+void nack_handler(struct coap_context_t *context,
+                  coap_session_t *session,
+                  coap_pdu_t *sent,
+                  coap_nack_reason_t reason,
+                  const coap_tid_t id) {
+    if (reason == COAP_NACK_RST) {
+        // Pong message
+        handle_response(curr_env, sent);
+    } else if (reason == COAP_NACK_TOO_MANY_RETRIES) {
+        // Ping timeout
+    } else {
+        log_error("nack_handler gets fired with unsupported reason type!");
     }
 }

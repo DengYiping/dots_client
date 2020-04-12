@@ -12,21 +12,22 @@
 #include "task_env.h"
 #include "heartbeat.h"
 
-static void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
+static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     coap_session_release(sess);
     if (cxt) {
         coap_free_context(cxt);
     }
     coap_cleanup();
 }
-dots_task_env* connect_signal_channel(dots_task_env* org_env) {
-    coap_context_t* ctx;
-    coap_session_t* sess;
-    coap_session_t* o_sess;
-    coap_address_t* addr;
+
+dots_task_env *connect_signal_channel(dots_task_env *org_env) {
+    coap_context_t *ctx;
+    coap_session_t *sess;
+    coap_session_t *o_sess;
+    coap_address_t *addr;
     coap_startup();
 
-    dots_client_context* client_context = dots_get_client_context();
+    dots_client_context *client_context = dots_get_client_context();
 
     if (log_get_level() <= LOG_LEVEL_DEBUG) {
         coap_dtls_set_log_level(LOG_DEBUG);
@@ -68,11 +69,11 @@ dots_task_env* connect_signal_channel(dots_task_env* org_env) {
 
 
     // Create resource for heartbeat mechanism from server
-    coap_resource_t* heartbeat_resource = coap_resource_unknown_init(heartbeat_handler);
+    coap_resource_t *heartbeat_resource = coap_resource_unknown_init(heartbeat_handler);
     check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
     coap_add_resource(ctx, heartbeat_resource);
 
-    dots_task_env* env;
+    dots_task_env *env;
     if (org_env == NULL) {
         env = dots_new_env(ctx, sess);
     } else {
@@ -83,9 +84,12 @@ dots_task_env* connect_signal_channel(dots_task_env* org_env) {
     dots_set_env(env);
     dots_set_org_env(org_env);
     dots_set_o_sess(o_sess);
+    dots_set_new_sess(sess);
 
+    // Handle new connection established & disconnect event
     coap_register_event_handler(ctx, event_handler);
-    heartbeat_send(env);
+    coap_register_response_handler(ctx, response_handler);
+    coap_register_nack_handler(ctx, nack_handler);
 
     return env;
 }
