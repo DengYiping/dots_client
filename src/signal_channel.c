@@ -13,7 +13,9 @@
 #include "heartbeat.h"
 
 static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
-    coap_session_release(sess);
+    if (sess) {
+        coap_session_release(sess);
+    }
     if (cxt) {
         coap_free_context(cxt);
     }
