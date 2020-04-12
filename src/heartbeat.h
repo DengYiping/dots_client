@@ -6,7 +6,9 @@
 #define DOTS_CLIENT_HEARTBEAT_H
 
 #include <stdlib.h>
+#include "task_env.h"
 
 int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len);
+void heartbeat_send(dots_task_env *env);
 
 #endif //DOTS_CLIENT_HEARTBEAT_H

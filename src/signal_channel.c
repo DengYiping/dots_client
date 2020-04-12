@@ -19,7 +19,7 @@ static void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
     }
     coap_cleanup();
 }
-int connect_signal_channel(dots_task_env* org_env) {
+dots_task_env* connect_signal_channel(dots_task_env* org_env) {
     coap_context_t* ctx;
     coap_session_t* sess;
     coap_session_t* o_sess;
@@ -85,7 +85,7 @@ int connect_signal_channel(dots_task_env* org_env) {
     dots_set_o_sess(o_sess);
 
     coap_register_event_handler(ctx, event_handler);
-    verify_cbor_serialization();
+    heartbeat_send(env);
 
-    return 1;
+    return env;
 }

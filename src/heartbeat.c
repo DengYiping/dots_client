@@ -14,7 +14,7 @@
 #define CBOR_HEARTBEAKT_KEY 49
 #define CBOR_PEER_HB_STATUS_KEY 51
 
-static const char* const HB_REQUEST_PATH = ".well-known/dots/hb";
+static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
 
 /**
  *      Header: PUT (Code=0.03)
@@ -87,7 +87,7 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
 }
 
 void heartbeat_send(dots_task_env *env) {
-    uint8_t* buffer;
+    uint8_t *buffer;
     size_t buffer_len;
     create_cbor_heartbeat(&buffer, &buffer_len);
     check_valid(buffer, "Unable to deserialize heartbeat payload");
@@ -99,6 +99,7 @@ void heartbeat_send(dots_task_env *env) {
             coap_session_max_pdu_size(env->curr_sess));
     coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH), HB_REQUEST_PATH);
     coap_add_data(pdu, buffer_len, buffer);
+
 
     coap_send(env->curr_sess, pdu);
     free(buffer);
