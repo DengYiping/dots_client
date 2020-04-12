@@ -8,18 +8,35 @@
 #include "dots_code.h"
 #include "preconditions.h"
 
+int connect_signal_channel(dots_task_env *org_env);
 static const char *const ERROR_MSG = "Invalid heartbeat!";
 
 static dots_task_env *curr_env = NULL;
 static dots_task_env *org_env = NULL;
 static struct coap_session_t *o_sess = NULL;
 
-int connect_signal_channel(dots_task_env *org_env);
+void dots_set_env(dots_task_env *env) {
+    curr_env = env;
+}
 
-static void restart_connection(dots_task_env* env) {
+void dots_set_org_env(dots_task_env *env) {
+    org_env = env;
+}
+
+void dots_set_o_sess(coap_session_t *sess) {
+    o_sess = sess;
+}
+
+
+static void restart_connection(dots_task_env *env) {
     log_info("Restart CoAP connection!");
     check_valid(connect_signal_channel(env), "connect_signal_channel() failed!");
 }
+
+static void handle_response(dots_task_env* env, coap_pdu_t* pdu) {
+
+}
+
 
 void heartbeat_handler(
         coap_context_t *ctx,
@@ -49,17 +66,7 @@ void heartbeat_handler(
     // TODO: setIsReceivedHeartBeat
 }
 
-void dots_set_env(dots_task_env *env) {
-    curr_env = env;
-}
 
-void dots_set_org_env(dots_task_env *env) {
-    org_env = env;
-}
-
-void dots_set_o_sess(coap_session_t *sess) {
-    o_sess = sess;
-}
 
 void event_handler(struct coap_context_t *ctx,
                    coap_event_t event,
@@ -74,3 +81,13 @@ void event_handler(struct coap_context_t *ctx,
     }
 }
 
+void response_handler(struct coap_context_t *context,
+                      coap_session_t *session,
+                      coap_pdu_t *sent,
+                      coap_pdu_t *received,
+                      const coap_tid_t id) {
+    handle_response(curr_env, received);
+    if (received != NULL && o_sess != NULL && o_sess == curr_env->curr_sess) {
+
+    }
+}

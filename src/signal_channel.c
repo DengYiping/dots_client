@@ -10,6 +10,7 @@
 #include "preconditions.h"
 #include "signal_channel_handlers.h"
 #include "task_env.h"
+#include "heartbeat.h"
 
 static void cleanup_signal_channel(coap_context_t* cxt, coap_session_t* sess) {
     coap_session_release(sess);
@@ -84,6 +85,7 @@ int connect_signal_channel(dots_task_env* org_env) {
     dots_set_o_sess(o_sess);
 
     coap_register_event_handler(ctx, event_handler);
+    verify_cbor_serialization();
 
     return 1;
 }

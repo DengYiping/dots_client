@@ -20,10 +20,16 @@ void event_handler(struct coap_context_t *,
                    coap_event_t event,
                    struct coap_session_t *session);
 
-void dots_set_env(dots_task_env* env);
+void response_handler(struct coap_context_t *context,
+                      coap_session_t *session,
+                      coap_pdu_t *sent,
+                      coap_pdu_t *received,
+                      const coap_tid_t id);
 
-void dots_set_org_env(dots_task_env* env);
+void dots_set_env(dots_task_env *env);
 
-void dots_set_o_sess(coap_session_t* sess);
+void dots_set_org_env(dots_task_env *env);
+
+void dots_set_o_sess(coap_session_t *sess);
 
 #endif //DOTS_CLIENT_SIGNAL_CHANNEL_HANDLERS_H
