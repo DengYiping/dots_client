@@ -14,6 +14,8 @@
 #define CBOR_HEARTBEAKT_KEY 49
 #define CBOR_PEER_HB_STATUS_KEY 51
 
+#define HEARTBEAT_SLEEP_TIME 30
+
 static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
 
 /**
@@ -86,7 +88,7 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
     return 1;
 }
 
-void heartbeat_send(dots_task_env *env) {
+static void heartbeat_send(dots_task_env *env) {
     uint8_t *buffer;
     size_t buffer_len;
     create_cbor_heartbeat(&buffer, &buffer_len);
@@ -104,3 +106,21 @@ void heartbeat_send(dots_task_env *env) {
     coap_send(env->curr_sess, pdu);
     free(buffer);
 }
+
+static void active_heartbeat_runnable(dots_task_env *env) {
+    while (1) {
+        sleep(HEARTBEAT_SLEEP_TIME);
+        log_info("Send out a heartbeat!");
+        heartbeat_send(env);
+    }
+}
+
+void start_heartbeakt(dots_task_env *env) {
+    pthread_t heartbeat_thread;
+    check_valid(
+            !pthread_create(&heartbeat_thread, NULL, active_heartbeat_runnable, env),
+            "Cannot create a new thread!");
+    pthread_detach(heartbeat_thread);
+}
+
+

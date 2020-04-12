@@ -11,6 +11,7 @@
 #include "signal_channel_handlers.h"
 #include "task_env.h"
 #include "heartbeat.h"
+#include <unistd.h>
 
 static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     if (sess) {
@@ -75,6 +76,8 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
     check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
     coap_add_resource(ctx, heartbeat_resource);
 
+    // Handle reconnection
+    /*
     dots_task_env *env;
     if (org_env == NULL) {
         env = dots_new_env(ctx, sess);
@@ -82,16 +85,27 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
         o_sess = org_env->curr_sess;
         env = org_env;
     }
+     */
+
+    dots_task_env* env = dots_new_env(ctx, sess);
 
     dots_set_env(env);
+
+    /*
     dots_set_org_env(org_env);
     dots_set_o_sess(o_sess);
     dots_set_new_sess(sess);
+     */
 
     // Handle new connection established & disconnect event
     coap_register_event_handler(ctx, event_handler);
     coap_register_response_handler(ctx, response_handler);
     coap_register_nack_handler(ctx, nack_handler);
+
+    start_heartbeakt(env);
+
+    coap_run_once(ctx, 1000);
+    sleep(1000000);
 
     return env;
 }

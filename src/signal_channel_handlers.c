@@ -42,6 +42,10 @@ static void handle_response(dots_task_env* env, coap_pdu_t* pdu) {
 
 }
 
+static void handle_request_timeout(dots_task_env* env, coap_pdu_t* pdu) {
+
+}
+
 
 void heartbeat_handler(
         coap_context_t *ctx,
@@ -76,6 +80,7 @@ void heartbeat_handler(
 void event_handler(struct coap_context_t *ctx,
                    coap_event_t event,
                    struct coap_session_t *sess) {
+    /*
     if (event == COAP_EVENT_DTLS_CONNECTED) {
         if (org_env) {
             org_env->replacing_sess = sess;
@@ -84,6 +89,7 @@ void event_handler(struct coap_context_t *ctx,
         coap_session_release(sess);
         restart_connection(curr_env);
     }
+     */
 }
 
 void response_handler(struct coap_context_t *context,
@@ -92,9 +98,11 @@ void response_handler(struct coap_context_t *context,
                       coap_pdu_t *received,
                       const coap_tid_t id) {
     handle_response(curr_env, received);
+    /*
     if (received != NULL && o_sess != NULL && o_sess == curr_env->curr_sess) {
-
+        // TODO: handle restarted session
     }
+    */
 }
 
 void nack_handler(struct coap_context_t *context,
@@ -107,6 +115,7 @@ void nack_handler(struct coap_context_t *context,
         handle_response(curr_env, sent);
     } else if (reason == COAP_NACK_TOO_MANY_RETRIES) {
         // Ping timeout
+        handle_request_timeout(curr_env, sent);
     } else {
         log_error("nack_handler gets fired with unsupported reason type!");
     }

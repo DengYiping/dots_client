@@ -6,6 +6,8 @@
 #define DOTS_CLIENT_TASK_ENV_H
 #include <coap2/coap.h>
 #include "client_context.h"
+#include "map.h"
+
 
 typedef struct dots_task_env {
     struct coap_context_t* curr_ctx;
