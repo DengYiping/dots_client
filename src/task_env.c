@@ -4,7 +4,6 @@
 
 #include "task_env.h"
 
-
 static dots_client_config* client_config;
 
 dots_task_env* dots_new_env(struct coap_context_t* ctx, struct coap_session_t* sess) {
@@ -12,6 +11,7 @@ dots_task_env* dots_new_env(struct coap_context_t* ctx, struct coap_session_t* s
     result->curr_ctx = ctx;
     result->curr_sess = sess;
     result->replacing_sess = NULL;
+    result->heartbeat_interval = 5; // Every 5 second by default
     return result;
 }
 

@@ -21,6 +21,21 @@ static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     coap_cleanup();
 }
 
+static void register_heartbeat_transponder(coap_context_t *ctx) {
+    // Create resource for heartbeat mechanism from server
+    coap_resource_t *heartbeat_resource = coap_resource_unknown_init(NULL);
+    check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
+    coap_add_resource(ctx, heartbeat_resource);
+    coap_register_handler(heartbeat_resource, COAP_REQUEST_PUT, heartbeat_handler);
+}
+
+static void register_client_handlers(coap_context_t *ctx) {
+    // Handle new connection established & disconnect event
+    coap_register_event_handler(ctx, event_handler);
+    coap_register_response_handler(ctx, response_handler);
+    coap_register_nack_handler(ctx, nack_handler);
+}
+
 dots_task_env *connect_signal_channel(dots_task_env *org_env) {
     coap_context_t *ctx;
     coap_session_t *sess;
@@ -39,7 +54,7 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
 
     if (client_context->psk != NULL && strlen(client_context->psk) > 0) {
         check_valid(client_context->identity, "Identity must be present when using PSK!");
-        ctx = coap_new_context(addr);
+        ctx = coap_new_context(NULL);
         check_valid(ctx != NULL, "Cannot create a CoAP context");
 
         log_info("Making a new session!");
@@ -51,17 +66,12 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
                 client_context->identity,
                 client_context->psk,
                 strlen(client_context->psk));
+        log_info("New CoAP session is created!");
     } else {
         panic("Asymmetric encryption is not supported at the moment!");
     }
 
-
-    // Create resource for heartbeat mechanism from server
-    coap_resource_t *heartbeat_resource = coap_resource_unknown_init(heartbeat_handler);
-    check_valid(heartbeat_resource, "Heartbeat resource cannot be created!");
-    coap_add_resource(ctx, heartbeat_resource);
-
-    // Handle reconnection
+    // Environment for handler callbacks
     /*
     dots_task_env *env;
     if (org_env == NULL) {
@@ -72,19 +82,15 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
     }
      */
 
-    dots_task_env* env = dots_new_env(ctx, sess);
-
+    dots_task_env *env = dots_new_env(ctx, sess);
     dots_set_env(env);
-
     /*
     dots_set_org_env(org_env);
     dots_set_o_sess(o_sess);
     dots_set_new_sess(sess);
      */
+    register_heartbeat_transponder(ctx);
+    register_client_handlers(ctx);
 
-    // Handle new connection established & disconnect event
-    coap_register_event_handler(ctx, event_handler);
-    coap_register_response_handler(ctx, response_handler);
-    coap_register_nack_handler(ctx, nack_handler);
     return env;
 }

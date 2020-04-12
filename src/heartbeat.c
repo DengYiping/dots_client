@@ -14,8 +14,6 @@
 #define CBOR_HEARTBEAKT_KEY 49
 #define CBOR_PEER_HB_STATUS_KEY 51
 
-#define HEARTBEAT_SLEEP_TIME 30
-
 static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
 
 /**
@@ -30,8 +28,14 @@ static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
              "peer-hb-status": true
            }
         }
- */
 
+   The DOTS Heartbeat mechanism uses non-confirmable PUT requests
+   (Figure 27) with an expected 2.04 (Changed) Response Code
+   (Figure 28).  This procedure occurs between a DOTS agent and its
+   immediate peer DOTS agent.  As such, this PUT request MUST NOT be
+   relayed by a DOTS gateway.  The PUT request used for DOTS heartbeat
+   MUST NOT have a 'cuid', 'cdid,' or 'mid' Uri-Path.
+ */
 static void create_cbor_heartbeat(uint8_t **buffer_ptr, size_t *len_ptr) {
     cbor_item_t *nested = cbor_new_definite_map(1);
     cbor_map_add(nested, (struct cbor_pair) {
@@ -109,7 +113,7 @@ static void heartbeat_send(dots_task_env *env) {
 
 static void active_heartbeat_runnable(dots_task_env *env) {
     while (1) {
-        sleep(HEARTBEAT_SLEEP_TIME);
+        sleep(env->heartbeat_interval);
         log_info("Send out a heartbeat!");
         heartbeat_send(env);
     }
