@@ -97,6 +97,10 @@ void response_handler(struct coap_context_t *context,
                       coap_pdu_t *sent,
                       coap_pdu_t *received,
                       const coap_tid_t id) {
+    if (coap_get_log_level() < LOG_DEBUG) {
+        coap_show_pdu(LOG_INFO, received);
+    }
+
     handle_response(curr_env, received);
     /*
     if (received != NULL && o_sess != NULL && o_sess == curr_env->curr_sess) {

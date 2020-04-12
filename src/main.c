@@ -58,8 +58,13 @@ int main(int argc, char **argv) {
     log_info("Server address: %s", client_context->server_addr);
 
     dots_set_client_context(client_context);
-    connect_signal_channel(NULL);
+    dots_task_env* env = connect_signal_channel(NULL);
 
+    while (1) {
+        int result = coap_run_once(env->curr_ctx, 2000);
+        check_valid(result >= 0, "Cannot process internal loop");
+        /* Do any other housekeeping */
+    }
     free(client_context);
     return 0;
 }

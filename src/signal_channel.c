@@ -2,7 +2,6 @@
 // Created by Yiping Deng on 4/9/20.
 //
 
-#include "signal_channel.h"
 #include <coap2/coap.h>
 #include "log.h"
 #include <stdlib.h>
@@ -10,8 +9,6 @@
 #include "preconditions.h"
 #include "signal_channel_handlers.h"
 #include "task_env.h"
-#include "heartbeat.h"
-#include <unistd.h>
 
 static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     if (sess) {
@@ -26,8 +23,11 @@ static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
 dots_task_env *connect_signal_channel(dots_task_env *org_env) {
     coap_context_t *ctx;
     coap_session_t *sess;
-    coap_session_t *o_sess;
+
+    // coap_session_t *o_sess;
+
     coap_address_t *addr;
+
     coap_startup();
 
     dots_client_context *client_context = dots_get_client_context();
@@ -58,6 +58,7 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
         ctx = coap_new_context(addr);
         check_valid(ctx != NULL, "Cannot create a CoAP context");
 
+        log_info("Making a new session!");
         sess = coap_new_client_session_psk(
                 ctx,
                 NULL,
@@ -101,11 +102,5 @@ dots_task_env *connect_signal_channel(dots_task_env *org_env) {
     coap_register_event_handler(ctx, event_handler);
     coap_register_response_handler(ctx, response_handler);
     coap_register_nack_handler(ctx, nack_handler);
-
-    start_heartbeakt(env);
-
-    coap_run_once(ctx, 1000);
-    sleep(1000000);
-
     return env;
 }
