@@ -11,6 +11,8 @@
 
 coap_address_t*
 resolve_address(const char *host, const char *service) {
+    log_debug("Resolving address %s with port %s", host, service);
+
     coap_address_t *dst = malloc(sizeof(coap_address_t));
 
     struct addrinfo *res, *ainfo;

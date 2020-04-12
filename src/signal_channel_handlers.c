@@ -118,6 +118,7 @@ void event_handler(struct coap_context_t *ctx,
             break;
         case COAP_EVENT_DTLS_CLOSED:
             log_info("Connection is closed on session! Ptr: %p", sess);
+            curr_env->curr_sess = NULL;
             restart_connection(curr_env);
             break;
         case COAP_EVENT_DTLS_ERROR:

@@ -17,6 +17,7 @@ dots_task_env* dots_new_env(coap_context_t* ctx, coap_session_t* sess) {
 }
 
 void dots_renew_env_with_session(dots_task_env* env, coap_session_t* sess) {
+    log_info("Renewing a old session and disable the new session!");
     check_valid(env->curr_sess != sess, "Current session is the same as the renew session");
     coap_session_release(env->curr_sess);
     env->curr_sess = sess;

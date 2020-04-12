@@ -54,11 +54,17 @@ static coap_session_t *create_new_psk_session(coap_context_t *ctx) {
     return sess;
 }
 
-static coap_session_t *create_new_dtls_session(coap_context_t *ctx, int load_certificate) {
-    log_info("Making a new session!");
+static coap_session_t *create_new_pki_session(coap_context_t *ctx, int load_certificate) {
     dots_client_config *client_context = dots_get_client_config();
     if (load_certificate) {
+        log_info("Loading certificates ...");
+        log_info(
+                "Using CA %s, public key %s, private key %s",
+                client_context->cert_file,
+                client_context->client_cert_file,
+                client_context->client_key_file);
         coap_dtls_pki_t *setup_data = malloc(sizeof(coap_dtls_pki_t));
+        memset(setup_data, 0, sizeof(struct coap_dtls_pki_t));
         // Setup dtls pki configuration
         setup_data->version = COAP_DTLS_PKI_SETUP_VERSION;
         setup_data->pki_key.key_type = COAP_PKI_KEY_PEM;
@@ -85,6 +91,7 @@ static coap_session_t *create_new_dtls_session(coap_context_t *ctx, int load_cer
         pem->private_key = client_context->client_key_file;
         check_valid(coap_context_set_pki(ctx, setup_data), "Cannot setup the certificates");
     }
+    log_info("Making a new session!");
     coap_address_t *addr = resolve_address(client_context->server_addr, client_context->server_port);
     coap_session_t *sess = coap_new_client_session(ctx, NULL, addr, COAP_PROTO_DTLS);
     log_info("New CoAP session is created!");
@@ -103,7 +110,7 @@ static int is_using_psk() {
                 client_context->client_key_file != NULL &&
                 client_context->client_cert_file != NULL &&
                 client_context->cert_file != NULL,
-                "Certficate files are passed!");
+                "Certficate files are missing!");
     }
     return result;
 }
@@ -131,7 +138,7 @@ dots_task_env *connect_signal_channel(dots_task_env *old_env) {
     if (is_using_psk()) {
         sess = create_new_psk_session(ctx);
     } else {
-        sess = create_new_dtls_session(ctx, old_env == NULL);
+        sess = create_new_pki_session(ctx, old_env == NULL);
     }
 
     dots_task_env *env;
@@ -143,7 +150,9 @@ dots_task_env *connect_signal_channel(dots_task_env *old_env) {
         o_sess = old_env->curr_sess;
         env = old_env;
         env->curr_sess = sess;
-        coap_session_release(o_sess);
+        if (o_sess) {
+            coap_session_release(o_sess);
+        }
     }
 
     dots_set_env(env);

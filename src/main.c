@@ -33,9 +33,9 @@ int main(int argc, char **argv) {
             OPT_STRING(0, "psk", &(client_context->psk), "DTLS PSK"),
             OPT_STRING(0, "identity", &(client_context->identity), "DTLS identity"),
             OPT_GROUP("Certificate"),
-            OPT_STRING(0, "cert_file", &(client_context->cert_file), "Certification file"),
-            OPT_STRING(0, "client_cert_file", &(client_context->client_cert_file), "Certification file for client"),
-            OPT_STRING(0, "client_key_file", &(client_context->client_key_file), "Key file used by the client"),
+            OPT_STRING(0, "cert_file", &(client_context->cert_file), "CA file"),
+            OPT_STRING(0, "client_cert_file", &(client_context->client_cert_file), "Certification file for client. Public key"),
+            OPT_STRING(0, "client_key_file", &(client_context->client_key_file), "Key file used by the client. Private key"),
             OPT_END()
     };
     struct argparse argparse;

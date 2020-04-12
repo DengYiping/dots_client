@@ -7,6 +7,6 @@
 #include <stdlib.h>
 #include "log.h"
 
-#define check_valid(condition, ...) ({ if (!(condition)) {log_log(LOG_LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__); exit(EXIT_FAILURE);}})
+#define check_valid(condition, ...) ({ if (!(condition)) {log_log(LOG_LEVEL_FATAL, __FILE__, __LINE__, __VA_ARGS__); exit(EXIT_FAILURE);}})
 #define panic(...) ({log_log(LOG_LEVEL_FATAL, __FILE__, __LINE__, __VA_ARGS__); exit(EXIT_FAILURE);})
 #endif //DOTS_CLIENT_PRECONDITIONS_H

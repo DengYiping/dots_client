@@ -107,7 +107,6 @@ static void heartbeat_send(dots_task_env *env) {
             message_id,
             coap_session_max_pdu_size(env->curr_sess));
     coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH), HB_REQUEST_PATH);
-    coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, )
     coap_add_data(pdu, buffer_len, buffer);
 
     coap_send(env->curr_sess, pdu);
@@ -121,6 +120,7 @@ static void heartbeat_send(dots_task_env *env) {
 }
 
 static void active_heartbeat_runnable(dots_task_env *env) {
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,NULL);
     while (1) {
         sleep(env->heartbeat_interval);
         log_info("Send out a heartbeat!");
@@ -135,6 +135,12 @@ void start_heartbeat(dots_task_env *env) {
                 !pthread_create(&heartbeat_thread, NULL, active_heartbeat_runnable, env),
                 "Cannot create a new thread!");
         pthread_detach(heartbeat_thread);
+    }
+}
+
+void stop_heartbeat() {
+    if (heartbeat_thread) {
+        pthread_cancel(heartbeat_thread);
     }
 }
 
