@@ -8,7 +8,7 @@
 #include "dots_code.h"
 #include "preconditions.h"
 
-int connect_signal_channel(dots_task_env *org_env);
+int connect_signal_channel(dots_task_env *old_env);
 static const char *const ERROR_MSG = "Invalid heartbeat!";
 
 static dots_task_env *curr_env = NULL;
@@ -106,7 +106,26 @@ void event_handler(struct coap_context_t *ctx,
         restart_connection(curr_env);
     }
      */
-    log_debug("New event received!");
+    switch(event) {
+        case COAP_EVENT_DTLS_CONNECTED:
+            log_info("Connection is successfully established on session! Ptr: %p", sess);
+            if (curr_env->curr_sess != sess) {
+                dots_renew_env_with_session(curr_env, sess);
+            }
+            break;
+        case COAP_EVENT_DTLS_RENEGOTIATE:
+            log_info("Connection is renegotiated on session! Ptr: %p", sess);
+            break;
+        case COAP_EVENT_DTLS_CLOSED:
+            log_info("Connection is closed on session! Ptr: %p", sess);
+            restart_connection(curr_env);
+            break;
+        case COAP_EVENT_DTLS_ERROR:
+            log_info("Received a CoAP error event!");
+            break;
+        default:
+            panic("Unsupported event: %i", event);
+    }
 }
 
 void response_handler(struct coap_context_t *context,

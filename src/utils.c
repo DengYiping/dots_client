@@ -5,9 +5,9 @@
 #include "utils.h"
 
 #include "log.h"
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <cbor.h>
 
 coap_address_t*
 resolve_address(const char *host, const char *service) {
@@ -42,4 +42,20 @@ resolve_address(const char *host, const char *service) {
     finish:
     freeaddrinfo(res);
     return dst;
+}
+
+void dots_describe_pdu(coap_pdu_t* pdu) {
+    printf("-----PDU-------\n");
+    coap_show_pdu(LOG_DEBUG, pdu);
+    if (log_get_level() <= LOG_DEBUG) {
+        printf("--------CBOR---\n");
+        size_t len;
+        uint8_t *buffer;
+        coap_get_data(pdu, &len, &buffer);
+        struct cbor_load_result result;
+        cbor_item_t *item = cbor_load(buffer, len, &result);
+        cbor_describe(item, stdout);
+    }
+    printf("-----PDU-------\n");
+    fflush(stdout);
 }

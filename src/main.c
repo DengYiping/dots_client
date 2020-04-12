@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     argc = argparse_parse(&argparse, argc, argv);
 
     if (DEBUG_MODE & flags) {
-        log_set_level(LOG_LEVEL_DEBUG);
+        log_set_level(LOG_LEVEL_TRACE);
     } else {
         log_set_level(LOG_LEVEL_INFO);
     }

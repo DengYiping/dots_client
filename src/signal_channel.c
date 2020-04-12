@@ -5,11 +5,12 @@
 #include <coap2/coap.h>
 #include "log.h"
 #include <stdlib.h>
-#include <arpa/inet.h>
+#include <coap2/coap_dtls.h>
 #include "preconditions.h"
 #include "signal_channel_handlers.h"
 #include "task_env.h"
 #include "utils.h"
+#include "heartbeat.h"
 
 static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     if (sess) {
@@ -36,61 +37,119 @@ static void register_client_handlers(coap_context_t *ctx) {
     coap_register_nack_handler(ctx, nack_handler);
 }
 
-dots_task_env *connect_signal_channel(dots_task_env *org_env) {
+static coap_session_t *create_new_psk_session(coap_context_t *ctx) {
+    dots_client_config *client_context = dots_get_client_config();
+    coap_address_t *addr = resolve_address(client_context->server_addr, client_context->server_port);
+    log_info("Making a new session!");
+    coap_session_t *sess = coap_new_client_session_psk(
+            ctx,
+            NULL,
+            addr,
+            COAP_PROTO_DTLS,
+            client_context->identity,
+            client_context->psk,
+            strlen(client_context->psk));
+    log_info("New CoAP session is created!");
+    log_debug("CoAP session is created! Ptr: %p", sess);
+    return sess;
+}
+
+static coap_session_t *create_new_dtls_session(coap_context_t *ctx, int load_certificate) {
+    log_info("Making a new session!");
+    dots_client_config *client_context = dots_get_client_config();
+    if (load_certificate) {
+        coap_dtls_pki_t *setup_data = malloc(sizeof(coap_dtls_pki_t));
+        // Setup dtls pki configuration
+        setup_data->version = COAP_DTLS_PKI_SETUP_VERSION;
+        setup_data->pki_key.key_type = COAP_PKI_KEY_PEM;
+        setup_data->verify_peer_cert = 1;
+        setup_data->require_peer_cert = 1;
+        setup_data->allow_self_signed = 1;
+        setup_data->allow_expired_certs = 1;
+        setup_data->cert_chain_validation = 1;
+        setup_data->cert_chain_verify_depth = 2;
+
+        // Use for check that is certificate in certificate revocation list (CRL) from actual server.
+        setup_data->check_cert_revocation = 1;
+        setup_data->allow_no_crl = 1;
+        setup_data->allow_expired_crl = 1;
+
+        setup_data->validate_cn_call_back = NULL;
+        setup_data->cn_call_back_arg = NULL;
+        setup_data->validate_sni_call_back = NULL;
+        setup_data->sni_call_back_arg = NULL;
+
+        coap_pki_key_pem_t *pem = &(setup_data->pki_key.key.pem);
+        pem->ca_file = client_context->cert_file;
+        pem->public_cert = client_context->client_cert_file;
+        pem->private_key = client_context->client_key_file;
+        check_valid(coap_context_set_pki(ctx, setup_data), "Cannot setup the certificates");
+    }
+    coap_address_t *addr = resolve_address(client_context->server_addr, client_context->server_port);
+    coap_session_t *sess = coap_new_client_session(ctx, NULL, addr, COAP_PROTO_DTLS);
+    log_info("New CoAP session is created!");
+    log_debug("CoAP session is created! Ptr: %p", sess);
+}
+
+static int is_using_psk() {
+    dots_client_config *client_context = dots_get_client_config();
+    int result = client_context->psk != NULL && strlen(client_context->psk) > 0;
+    if (result) {
+        check_valid(
+                client_context->identity,
+                "Identity must be present when using PSK!");
+    } else {
+        check_valid(
+                client_context->client_key_file != NULL &&
+                client_context->client_cert_file != NULL &&
+                client_context->cert_file != NULL,
+                "Certficate files are passed!");
+    }
+    return result;
+}
+
+dots_task_env *connect_signal_channel(dots_task_env *old_env) {
     coap_context_t *ctx;
     coap_session_t *sess;
-    // coap_session_t *o_sess;
-    coap_address_t *addr;
+    coap_session_t *o_sess;
 
-    dots_client_config *client_context = dots_get_client_config();
     coap_startup();
 
+    coap_set_show_pdu_output(1);
     if (log_get_level() <= LOG_LEVEL_DEBUG) {
         coap_dtls_set_log_level(LOG_DEBUG);
         coap_set_log_level(LOG_DEBUG);
     }
 
-    addr = resolve_address(client_context->server_addr, client_context->server_port);
-
-    if (client_context->psk != NULL && strlen(client_context->psk) > 0) {
-        check_valid(client_context->identity, "Identity must be present when using PSK!");
+    if (old_env == NULL) {
         ctx = coap_new_context(NULL);
-        check_valid(ctx != NULL, "Cannot create a CoAP context");
-
-        log_info("Making a new session!");
-        sess = coap_new_client_session_psk(
-                ctx,
-                NULL,
-                addr,
-                COAP_PROTO_DTLS,
-                client_context->identity,
-                client_context->psk,
-                strlen(client_context->psk));
-        log_info("New CoAP session is created!");
     } else {
-        panic("Asymmetric encryption is not supported at the moment!");
+        ctx = old_env->curr_ctx;
+    }
+    check_valid(ctx != NULL, "Cannot create a CoAP context");
+
+    if (is_using_psk()) {
+        sess = create_new_psk_session(ctx);
+    } else {
+        sess = create_new_dtls_session(ctx, old_env == NULL);
     }
 
-    // Environment for handler callbacks
-    /*
     dots_task_env *env;
-    if (org_env == NULL) {
+    if (old_env == NULL) {
+        // Client connection fresh start
         env = dots_new_env(ctx, sess);
     } else {
-        o_sess = org_env->curr_sess;
-        env = org_env;
+        // Client try reconnect
+        o_sess = old_env->curr_sess;
+        env = old_env;
+        env->curr_sess = sess;
+        coap_session_release(o_sess);
     }
-     */
 
-    dots_task_env *env = dots_new_env(ctx, sess);
     dots_set_env(env);
-    /*
-    dots_set_org_env(org_env);
-    dots_set_o_sess(o_sess);
-    dots_set_new_sess(sess);
-     */
     register_heartbeat_transponder(ctx);
     register_client_handlers(ctx);
 
+    start_heartbeat(env);
     return env;
 }

@@ -8,6 +8,6 @@
 #include "client_config.h"
 #include "task_env.h"
 
-dots_task_env* connect_signal_channel(dots_task_env* org_env);
+dots_task_env* connect_signal_channel(dots_task_env* old_env);
 
 #endif //DOTS_CLIENT_SIGNAL_CHANNEL_H

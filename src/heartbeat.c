@@ -10,11 +10,13 @@
 #include "log.h"
 #include "task_env.h"
 #include "preconditions.h"
+#include "utils.h"
 
 #define CBOR_HEARTBEAKT_KEY 49
 #define CBOR_PEER_HB_STATUS_KEY 51
 
 static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
+static pthread_t heartbeat_thread = NULL;
 
 /**
  *      Header: PUT (Code=0.03)
@@ -93,6 +95,7 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
 }
 
 static void heartbeat_send(dots_task_env *env) {
+    log_debug("Sending a heartbeat!");
     uint8_t *buffer;
     size_t buffer_len;
     create_cbor_heartbeat(&buffer, &buffer_len);
@@ -104,10 +107,16 @@ static void heartbeat_send(dots_task_env *env) {
             message_id,
             coap_session_max_pdu_size(env->curr_sess));
     coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH), HB_REQUEST_PATH);
+    coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, )
     coap_add_data(pdu, buffer_len, buffer);
 
-
     coap_send(env->curr_sess, pdu);
+    dots_describe_pdu(pdu);
+    /*
+    if (coap_get_log_level() <= LOG_DEBUG) {
+        coap_show_pdu(LOG_DEBUG, pdu);
+    }
+    */
     free(buffer);
 }
 
@@ -119,12 +128,14 @@ static void active_heartbeat_runnable(dots_task_env *env) {
     }
 }
 
-void start_heartbeakt(dots_task_env *env) {
-    pthread_t heartbeat_thread;
-    check_valid(
-            !pthread_create(&heartbeat_thread, NULL, active_heartbeat_runnable, env),
-            "Cannot create a new thread!");
-    pthread_detach(heartbeat_thread);
+void start_heartbeat(dots_task_env *env) {
+    if (!heartbeat_thread) {
+        log_info("Create heartbeat ticker! It will tick every %i seconds!", env->heartbeat_interval);
+        check_valid(
+                !pthread_create(&heartbeat_thread, NULL, active_heartbeat_runnable, env),
+                "Cannot create a new thread!");
+        pthread_detach(heartbeat_thread);
+    }
 }
 
 

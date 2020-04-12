@@ -9,6 +9,6 @@
 #include "task_env.h"
 
 int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len);
-void start_heartbeakt(dots_task_env *env);
+void start_heartbeat(dots_task_env *env);
 
 #endif //DOTS_CLIENT_HEARTBEAT_H
