@@ -90,6 +90,8 @@ void event_handler(struct coap_context_t *ctx,
         restart_connection(curr_env);
     }
      */
+    static
+    log_debug("New event received!");
 }
 
 void response_handler(struct coap_context_t *context,
@@ -98,6 +100,7 @@ void response_handler(struct coap_context_t *context,
                       coap_pdu_t *received,
                       const coap_tid_t id) {
     if (coap_get_log_level() < LOG_DEBUG) {
+        log_debug("New response received!");
         coap_show_pdu(LOG_INFO, received);
     }
 
@@ -114,6 +117,7 @@ void nack_handler(struct coap_context_t *context,
                   coap_pdu_t *sent,
                   coap_nack_reason_t reason,
                   const coap_tid_t id) {
+    log_debug("New NACK received!");
     if (reason == COAP_NACK_RST) {
         // Pong message
         handle_response(curr_env, sent);
