@@ -7,7 +7,6 @@
 #include "heartbeat.h"
 #include "dots_code.h"
 #include "preconditions.h"
-#include "utils.h"
 
 int connect_signal_channel(dots_task_env *old_env);
 static const char *const ERROR_MSG = "Invalid heartbeat!";
@@ -34,14 +33,23 @@ void dots_set_o_sess(coap_session_t *sess) {
     o_sess = sess;
 }
 
-static void handle_heartbeat_request_response(dots_task_env* env) {
+static void handle_heartbeat_request_response(dots_task_env* env, coap_pdu_t* pdu) {
     env->expecting_heartbeat = env->expecting_heartbeat - 1;
     log_debug("Received heartbeat request response! Pending heartbeat: %i", env->expecting_heartbeat);
+    if (pdu->code != ResponseChanged) {
+        log_warn("Server is reporting to heartbeat incorrectly!");
+    }
 }
 
 static void handle_response(dots_task_env* env, coap_pdu_t* pdu) {
+    char map_key[64];
+    memset(map_key, 0, sizeof(map_key));
+    sprintf(map_key, "%d", pdu->tid);
     // If it is a heartbeat response
-    handle_heartbeat_request_response(env);
+    if (COAP_PDU_IS_RESPONSE(pdu) && map_get(&env->pending_heartbeat_map, map_key)) {
+        map_remove(&env->pending_heartbeat_map, map_key);
+        handle_heartbeat_request_response(env, pdu);
+    }
 }
 
 static void handle_request_timeout(dots_task_env* env, coap_pdu_t* pdu) {

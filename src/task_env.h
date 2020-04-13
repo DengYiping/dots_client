@@ -16,6 +16,9 @@ typedef struct dots_task_env {
 
     unsigned int heartbeat_interval;
     unsigned int expecting_heartbeat;
+    unsigned int reset_connection_flag;
+
+    map_t(uint16_t) pending_heartbeat_map;
 } dots_task_env;
 
 dots_task_env *dots_new_env(coap_context_t *ctx, coap_session_t *sess);

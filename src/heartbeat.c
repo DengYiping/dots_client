@@ -123,7 +123,14 @@ static void heartbeat_send(dots_task_env *env) {
     coap_add_data(pdu, buffer_len, buffer);
 
     dots_describe_pdu(pdu);
+
+    char map_key[64];
+    memset(map_key, 0, sizeof(map_key));
+    sprintf(map_key, "%d", pdu->tid);
+
     coap_send(env->curr_sess, pdu);
+    map_set(&env->pending_heartbeat_map, map_key, 1);
+
     free(buffer);
 }
 
