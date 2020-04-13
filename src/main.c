@@ -55,6 +55,8 @@ int main(int argc, char **argv) {
     log_info("Server address: %s:%s", client_context->server_addr, client_context->server_port);
 
     dots_set_client_config(client_context);
+    coap_startup();
+
     dots_task_env* env = connect_signal_channel(NULL);
 
     while (1) {

@@ -126,7 +126,6 @@ dots_task_env *connect_signal_channel(dots_task_env *old_env) {
     coap_session_t *sess;
     coap_session_t *o_sess;
 
-    coap_startup();
 
     coap_set_show_pdu_output(1);
     if (log_get_level() <= LOG_LEVEL_DEBUG) {

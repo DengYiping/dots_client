@@ -37,7 +37,7 @@ static void handle_heartbeat_request_response(dots_task_env* env, coap_pdu_t* pd
     env->expecting_heartbeat = env->expecting_heartbeat - 1;
     log_debug("Received heartbeat request response! Pending heartbeat: %i", env->expecting_heartbeat);
     if (pdu->code != ResponseChanged) {
-        log_warn("Server is reporting to heartbeat incorrectly!");
+        log_warn("Server is reporting to heartbeat incorrectly with response code %s!", coap_response_phrase(pdu->code));
     }
 }
 
@@ -88,6 +88,7 @@ void heartbeat_handler(
         response->type = COAP_MESSAGE_NON; // TypeNon
         coap_add_data(response, strlen(ERROR_MSG), ERROR_MSG);
     } else {
+        log_debug("Successful heartbeat response!");
         response->code = ResponseChanged;
         response->type = COAP_MESSAGE_NON;
     }

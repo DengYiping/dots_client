@@ -16,7 +16,10 @@
 #define CBOR_PEER_HB_STATUS_KEY 51
 #define HEARTBEAT_RECONNECT_LIMIT 5
 
-static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
+static const char *const HB_REQUEST_PATH_WELL_KNOWN = ".well-known";
+static const char *const HB_REQUEST_PATH_DOTS = "dots";
+static const char *const HB_REQUEST_PATH_HB = "hb";
+
 static pthread_t heartbeat_thread = NULL;
 
 /**
@@ -42,18 +45,22 @@ static pthread_t heartbeat_thread = NULL;
 static void create_cbor_heartbeat(uint8_t **buffer_ptr, size_t *len_ptr) {
     cbor_item_t *nested = cbor_new_definite_map(1);
     cbor_map_add(nested, (struct cbor_pair) {
-            .key = cbor_move(cbor_build_uint32(CBOR_PEER_HB_STATUS_KEY)),
+            .key = cbor_move(cbor_build_uint8(CBOR_PEER_HB_STATUS_KEY)),
             .value = cbor_move(cbor_build_bool(true))
     });
     cbor_item_t *root = cbor_new_definite_map(1);
     cbor_map_add(root, (struct cbor_pair) {
-            .key = cbor_move(cbor_build_uint32(CBOR_HEARTBEAKT_KEY)),
+            .key = cbor_move(cbor_build_uint8(CBOR_HEARTBEAKT_KEY)),
             .value = cbor_move(nested)
     });
-    cbor_serialize_alloc(root, buffer_ptr, len_ptr);
+    size_t new_len = cbor_serialize_alloc(root, buffer_ptr, len_ptr);
+    if (new_len != *len_ptr) {
+        *len_ptr = new_len;
+    }
     cbor_decref(&root);
 }
 
+// Tested
 int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
     struct cbor_load_result result;
     cbor_item_t *item = cbor_load(buffer, len, &result);
@@ -114,12 +121,18 @@ static void heartbeat_send(dots_task_env *env) {
     create_cbor_heartbeat(&buffer, &buffer_len);
     check_valid(buffer, "Unable to deserialize heartbeat payload");
     uint16_t message_id = coap_new_message_id(env->curr_sess);
+    unsigned char buf[3];
+
     coap_pdu_t *pdu = coap_pdu_init(
             COAP_MESSAGE_NON,
             COAP_REQUEST_PUT,
             message_id,
             coap_session_max_pdu_size(env->curr_sess));
-    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH), HB_REQUEST_PATH);
+    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH_WELL_KNOWN), HB_REQUEST_PATH_WELL_KNOWN);
+    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH_DOTS), HB_REQUEST_PATH_DOTS);
+    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH_HB), HB_REQUEST_PATH_HB);
+    coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, coap_encode_var_bytes(buf, COAP_MEDIATYPE_APPLICATION_CBOR), buf);
+
     coap_add_data(pdu, buffer_len, buffer);
 
     dots_describe_pdu(pdu);
