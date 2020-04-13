@@ -42,6 +42,7 @@ static pthread_t heartbeat_thread = NULL;
    relayed by a DOTS gateway.  The PUT request used for DOTS heartbeat
    MUST NOT have a 'cuid', 'cdid,' or 'mid' Uri-Path.
  */
+// Tested
 static void create_cbor_heartbeat(uint8_t **buffer_ptr, size_t *len_ptr) {
     cbor_item_t *nested = cbor_new_definite_map(1);
     cbor_map_add(nested, (struct cbor_pair) {
@@ -102,6 +103,7 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
     return 1;
 }
 
+// Tested
 static void heartbeat_send(dots_task_env *env) {
     if (!env->curr_sess) {
         log_info("Connection hasn't been established!");

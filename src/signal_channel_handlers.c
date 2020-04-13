@@ -84,6 +84,7 @@ void heartbeat_handler(
     // MessageId
     response->tid = request->tid;
     if (!validate_cbor_heartbeat_body(data, data_len)) {
+        log_warn("Heartbeat failure has been reported by the server! This might indicates a connection issue!");
         response->code = ResponseBadRequest;
         response->type = COAP_MESSAGE_NON; // TypeNon
         coap_add_data(response, strlen(ERROR_MSG), ERROR_MSG);
