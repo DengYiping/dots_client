@@ -7,6 +7,7 @@
 #include "heartbeat.h"
 #include "dots_code.h"
 #include "preconditions.h"
+#include "utils.h"
 
 int connect_signal_channel(dots_task_env *old_env);
 static const char *const ERROR_MSG = "Invalid heartbeat!";
@@ -33,14 +34,14 @@ void dots_set_o_sess(coap_session_t *sess) {
     o_sess = sess;
 }
 
-
-static void restart_connection(dots_task_env *env) {
-    log_info("Restart CoAP connection!");
-    check_valid(connect_signal_channel(env), "connect_signal_channel() failed!");
+static void handle_heartbeat_request_response(dots_task_env* env) {
+    env->expecting_heartbeat = env->expecting_heartbeat - 1;
+    log_debug("Received heartbeat request response! Pending heartbeat: %i", env->expecting_heartbeat);
 }
 
 static void handle_response(dots_task_env* env, coap_pdu_t* pdu) {
-
+    // If it is a heartbeat response
+    handle_heartbeat_request_response(env);
 }
 
 static void handle_request_timeout(dots_task_env* env, coap_pdu_t* pdu) {
@@ -118,8 +119,9 @@ void event_handler(struct coap_context_t *ctx,
             break;
         case COAP_EVENT_DTLS_CLOSED:
             log_info("Connection is closed on session! Ptr: %p", sess);
-            curr_env->curr_sess = NULL;
-            restart_connection(curr_env);
+            if (curr_env->curr_sess == NULL || curr_env->curr_sess == sess) {
+                curr_env->curr_sess = NULL;
+            }
             break;
         case COAP_EVENT_DTLS_ERROR:
             log_info("Received a CoAP error event!");
@@ -135,8 +137,10 @@ void response_handler(struct coap_context_t *context,
                       coap_pdu_t *received,
                       const coap_tid_t id) {
     log_debug("New response received!");
-    if (coap_get_log_level() < LOG_DEBUG) {
-        coap_show_pdu(LOG_INFO, received);
+    if (log_get_level() <= LOG_LEVEL_DEBUG) {
+        printf("-----PDU-RESPONSE----\n");
+        coap_show_pdu(LOG_DEBUG, received);
+        printf("-----PDU-RESPONSE----\n");
     }
 
     handle_response(curr_env, received);

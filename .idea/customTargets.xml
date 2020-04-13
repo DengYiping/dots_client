@@ -11,5 +11,15 @@
         </clean>
       </configuration>
     </target>
+    <target id="04a0c2cd-3c6a-4b40-9196-ecc300379f1f" name="dots_client_debug" projectName="dots_client">
+      <configuration id="1de6d91d-5c17-4654-9251-31333c1606b7" name="dots_client_debug" toolchainName="Default">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_make debug" />
+        </build>
+        <clean type="TOOL">
+          <tool actionId="Tool_External Tools_make clean" />
+        </clean>
+      </configuration>
+    </target>
   </component>
 </project>

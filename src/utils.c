@@ -5,9 +5,19 @@
 #include "utils.h"
 
 #include "log.h"
+#include "preconditions.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <cbor.h>
+
+dots_task_env* connect_signal_channel(dots_task_env *env);
+
+void restart_connection(dots_task_env *env) {
+    log_info("Restart CoAP connection!");
+    env->expecting_heartbeat = 0;
+    env->reset_connection_flag = 0;
+    check_valid(connect_signal_channel(env), "connect_signal_channel() failed!");
+}
 
 coap_address_t*
 resolve_address(const char *host, const char *service) {
@@ -47,17 +57,22 @@ resolve_address(const char *host, const char *service) {
 }
 
 void dots_describe_pdu(coap_pdu_t* pdu) {
-    printf("-----PDU-------\n");
-    coap_show_pdu(LOG_DEBUG, pdu);
-    if (log_get_level() <= LOG_DEBUG) {
-        printf("--------CBOR---\n");
+    if (log_get_level() <= LOG_LEVEL_DEBUG) {
+        printf("-----PDU-------\n");
+        coap_show_pdu(LOG_DEBUG, pdu);
         size_t len;
         uint8_t *buffer;
         coap_get_data(pdu, &len, &buffer);
-        struct cbor_load_result result;
-        cbor_item_t *item = cbor_load(buffer, len, &result);
-        cbor_describe(item, stdout);
+        if (buffer) {
+            printf("--------CBOR---\n");
+            struct cbor_load_result result;
+
+            cbor_item_t *item = cbor_load(buffer, len, &result);
+            cbor_describe(item, stdout);
+            printf("--------CBOR---\n");
+            cbor_decref(&item);
+        }
+        printf("-----PDU-------\n");
+        fflush(stdout);
     }
-    printf("-----PDU-------\n");
-    fflush(stdout);
 }

@@ -14,6 +14,7 @@
 
 #define CBOR_HEARTBEAKT_KEY 49
 #define CBOR_PEER_HB_STATUS_KEY 51
+#define HEARTBEAT_RECONNECT_LIMIT 5
 
 static const char *const HB_REQUEST_PATH = ".well-known/dots/hb";
 static pthread_t heartbeat_thread = NULL;
@@ -95,7 +96,19 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
 }
 
 static void heartbeat_send(dots_task_env *env) {
-    log_debug("Sending a heartbeat!");
+    if (!env->curr_sess) {
+        log_info("Connection hasn't been established!");
+        restart_connection(env);
+        return;
+    }
+
+    env->expecting_heartbeat = env->expecting_heartbeat + 1;
+    if (env->expecting_heartbeat > HEARTBEAT_RECONNECT_LIMIT) {
+        coap_session_release(env->curr_sess);
+        return;
+    }
+
+    log_debug("Sending a heartbeat using session %p!", env->curr_sess);
     uint8_t *buffer;
     size_t buffer_len;
     create_cbor_heartbeat(&buffer, &buffer_len);
@@ -109,13 +122,8 @@ static void heartbeat_send(dots_task_env *env) {
     coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH), HB_REQUEST_PATH);
     coap_add_data(pdu, buffer_len, buffer);
 
-    coap_send(env->curr_sess, pdu);
     dots_describe_pdu(pdu);
-    /*
-    if (coap_get_log_level() <= LOG_DEBUG) {
-        coap_show_pdu(LOG_DEBUG, pdu);
-    }
-    */
+    coap_send(env->curr_sess, pdu);
     free(buffer);
 }
 
@@ -123,7 +131,6 @@ static void active_heartbeat_runnable(dots_task_env *env) {
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,NULL);
     while (1) {
         sleep(env->heartbeat_interval);
-        log_info("Send out a heartbeat!");
         heartbeat_send(env);
     }
 }

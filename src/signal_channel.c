@@ -12,6 +12,47 @@
 #include "utils.h"
 #include "heartbeat.h"
 
+static coap_dtls_pki_t* load_pki_setup_data() {
+    static coap_dtls_pki_t *setup_data = NULL;
+    if (setup_data == NULL) {
+        dots_client_config *client_context = dots_get_client_config();
+        log_info("Loading certificates ...");
+        log_info(
+                "Using CA %s, public key %s, private key %s",
+                client_context->cert_file,
+                client_context->client_cert_file,
+                client_context->client_key_file);
+        setup_data = malloc(sizeof(coap_dtls_pki_t));
+        memset(setup_data, 0, sizeof(struct coap_dtls_pki_t));
+        // Setup dtls pki configuration
+        setup_data->version = COAP_DTLS_PKI_SETUP_VERSION;
+        setup_data->pki_key.key_type = COAP_PKI_KEY_PEM;
+        setup_data->verify_peer_cert = 1;
+        setup_data->require_peer_cert = 1;
+        setup_data->allow_self_signed = 1;
+        setup_data->allow_expired_certs = 1;
+        setup_data->cert_chain_validation = 1;
+        setup_data->cert_chain_verify_depth = 2;
+
+        // Use for check that is certificate in certificate revocation list (CRL) from actual server.
+        setup_data->check_cert_revocation = 1;
+        setup_data->allow_no_crl = 1;
+        setup_data->allow_expired_crl = 1;
+
+        setup_data->validate_cn_call_back = NULL;
+        setup_data->cn_call_back_arg = NULL;
+        setup_data->validate_sni_call_back = NULL;
+        setup_data->sni_call_back_arg = NULL;
+
+        coap_pki_key_pem_t *pem = &(setup_data->pki_key.key.pem);
+        pem->ca_file = client_context->cert_file;
+        pem->public_cert = client_context->client_cert_file;
+        pem->private_key = client_context->client_key_file;
+
+    }
+    return setup_data;
+}
+
 static void cleanup_signal_channel(coap_context_t *cxt, coap_session_t *sess) {
     if (sess) {
         coap_session_release(sess);
@@ -40,7 +81,7 @@ static void register_client_handlers(coap_context_t *ctx) {
 static coap_session_t *create_new_psk_session(coap_context_t *ctx) {
     dots_client_config *client_context = dots_get_client_config();
     coap_address_t *addr = resolve_address(client_context->server_addr, client_context->server_port);
-    log_info("Making a new session!");
+    log_info("Making a new psk session!");
     coap_session_t *sess = coap_new_client_session_psk(
             ctx,
             NULL,
@@ -49,53 +90,18 @@ static coap_session_t *create_new_psk_session(coap_context_t *ctx) {
             client_context->identity,
             client_context->psk,
             strlen(client_context->psk));
-    log_info("New CoAP session is created!");
     log_debug("CoAP session is created! Ptr: %p", sess);
     return sess;
 }
 
-static coap_session_t *create_new_pki_session(coap_context_t *ctx, int load_certificate) {
+static coap_session_t *create_new_pki_session(coap_context_t *ctx) {
     dots_client_config *client_context = dots_get_client_config();
-    if (load_certificate) {
-        log_info("Loading certificates ...");
-        log_info(
-                "Using CA %s, public key %s, private key %s",
-                client_context->cert_file,
-                client_context->client_cert_file,
-                client_context->client_key_file);
-        coap_dtls_pki_t *setup_data = malloc(sizeof(coap_dtls_pki_t));
-        memset(setup_data, 0, sizeof(struct coap_dtls_pki_t));
-        // Setup dtls pki configuration
-        setup_data->version = COAP_DTLS_PKI_SETUP_VERSION;
-        setup_data->pki_key.key_type = COAP_PKI_KEY_PEM;
-        setup_data->verify_peer_cert = 1;
-        setup_data->require_peer_cert = 1;
-        setup_data->allow_self_signed = 1;
-        setup_data->allow_expired_certs = 1;
-        setup_data->cert_chain_validation = 1;
-        setup_data->cert_chain_verify_depth = 2;
-
-        // Use for check that is certificate in certificate revocation list (CRL) from actual server.
-        setup_data->check_cert_revocation = 1;
-        setup_data->allow_no_crl = 1;
-        setup_data->allow_expired_crl = 1;
-
-        setup_data->validate_cn_call_back = NULL;
-        setup_data->cn_call_back_arg = NULL;
-        setup_data->validate_sni_call_back = NULL;
-        setup_data->sni_call_back_arg = NULL;
-
-        coap_pki_key_pem_t *pem = &(setup_data->pki_key.key.pem);
-        pem->ca_file = client_context->cert_file;
-        pem->public_cert = client_context->client_cert_file;
-        pem->private_key = client_context->client_key_file;
-        check_valid(coap_context_set_pki(ctx, setup_data), "Cannot setup the certificates");
-    }
-    log_info("Making a new session!");
+    log_info("Making a new pki session!");
     coap_address_t *addr = resolve_address(client_context->server_addr, client_context->server_port);
-    coap_session_t *sess = coap_new_client_session(ctx, NULL, addr, COAP_PROTO_DTLS);
-    log_info("New CoAP session is created!");
+    coap_session_t *sess = coap_new_client_session_pki(ctx, NULL, addr, COAP_PROTO_DTLS, load_pki_setup_data());
+
     log_debug("CoAP session is created! Ptr: %p", sess);
+    return sess;
 }
 
 static int is_using_psk() {
@@ -136,23 +142,22 @@ dots_task_env *connect_signal_channel(dots_task_env *old_env) {
     check_valid(ctx != NULL, "Cannot create a CoAP context");
 
     if (is_using_psk()) {
-        sess = create_new_psk_session(ctx);
+        create_new_psk_session(ctx);
     } else {
-        sess = create_new_pki_session(ctx, old_env == NULL);
+        create_new_pki_session(ctx);
     }
 
     dots_task_env *env;
     if (old_env == NULL) {
         // Client connection fresh start
-        env = dots_new_env(ctx, sess);
+        env = dots_new_env(ctx, NULL);
     } else {
         // Client try reconnect
         o_sess = old_env->curr_sess;
-        env = old_env;
-        env->curr_sess = sess;
         if (o_sess) {
             coap_session_release(o_sess);
         }
+        env = old_env;
     }
 
     dots_set_env(env);

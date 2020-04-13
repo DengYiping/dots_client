@@ -13,9 +13,9 @@
 typedef struct dots_task_env {
     struct coap_context_t *curr_ctx;
     struct coap_session_t *curr_sess;
-    struct coap_session_t *replacing_sess;
 
     unsigned int heartbeat_interval;
+    unsigned int expecting_heartbeat;
 } dots_task_env;
 
 dots_task_env *dots_new_env(coap_context_t *ctx, coap_session_t *sess);

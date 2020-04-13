@@ -11,15 +11,17 @@ dots_task_env* dots_new_env(coap_context_t* ctx, coap_session_t* sess) {
     dots_task_env* result = malloc(sizeof(dots_task_env));
     result->curr_ctx = ctx;
     result->curr_sess = sess;
-    result->replacing_sess = NULL;
-    result->heartbeat_interval = 5; // Every 5 second by default
+    result->heartbeat_interval = 1; // Every 5 second by default
+    result->expecting_heartbeat = 0;
     return result;
 }
 
 void dots_renew_env_with_session(dots_task_env* env, coap_session_t* sess) {
     log_info("Renewing a old session and disable the new session!");
     check_valid(env->curr_sess != sess, "Current session is the same as the renew session");
-    coap_session_release(env->curr_sess);
+    if (env->curr_sess) {
+        coap_session_release(env->curr_sess);
+    }
     env->curr_sess = sess;
 }
 void dots_set_client_config(dots_client_config* ctx) {
