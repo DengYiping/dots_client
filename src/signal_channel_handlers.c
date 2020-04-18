@@ -9,6 +9,7 @@
 #include "preconditions.h"
 
 int connect_signal_channel(dots_task_env *old_env);
+
 static const char *const ERROR_MSG = "Invalid heartbeat!";
 
 static dots_task_env *curr_env = NULL;
@@ -21,38 +22,25 @@ void dots_set_env(dots_task_env *env) {
     curr_env = env;
 }
 
-void dots_set_org_env(dots_task_env *env) {
-    org_env = env;
-}
-
-void dots_set_new_sess(coap_session_t *sess) {
-    new_sess = sess;
-}
-
-void dots_set_o_sess(coap_session_t *sess) {
-    o_sess = sess;
-}
-
-static void handle_heartbeat_request_response(dots_task_env* env, coap_pdu_t* pdu) {
-    env->expecting_heartbeat = env->expecting_heartbeat - 1;
-    log_debug("Received heartbeat request response! Pending heartbeat: %i", env->expecting_heartbeat);
-    if (pdu->code != ResponseChanged) {
-        log_warn("Server is reporting to heartbeat incorrectly with response code %s!", coap_response_phrase(pdu->code));
-    }
-}
-
-static void handle_response(dots_task_env* env, coap_pdu_t* pdu) {
+static void handle_response(dots_task_env *env, coap_pdu_t *pdu) {
     char map_key[64];
     memset(map_key, 0, sizeof(map_key));
     sprintf(map_key, "%d", pdu->tid);
     // If it is a heartbeat response
-    if (COAP_PDU_IS_RESPONSE(pdu) && map_get(&env->pending_heartbeat_map, map_key)) {
-        map_remove(&env->pending_heartbeat_map, map_key);
-        handle_heartbeat_request_response(env, pdu);
+
+    if (COAP_PDU_IS_RESPONSE(pdu)) {
+        receive_dots_response_callback *callback_ptr = map_get(&env->pending_request_map, map_key);
+        if (callback_ptr != NULL) {
+            receive_dots_response_callback callback = *callback_ptr;
+            map_remove(&env->pending_request_map, map_key);
+            callback(pdu, env);
+        } else {
+            log_warn("Dangling request response with message id %s", map_key);
+        }
     }
 }
 
-static void handle_request_timeout(dots_task_env* env, coap_pdu_t* pdu) {
+static void handle_request_timeout(dots_task_env *env, coap_pdu_t *pdu) {
 
 }
 
@@ -117,7 +105,7 @@ void event_handler(struct coap_context_t *ctx,
         restart_connection(curr_env);
     }
      */
-    switch(event) {
+    switch (event) {
         case COAP_EVENT_DTLS_CONNECTED:
             log_info("Connection is successfully established on session! Ptr: %p", sess);
             if (curr_env->curr_sess != sess) {

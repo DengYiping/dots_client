@@ -16,8 +16,8 @@ void restart_connection(dots_task_env *env) {
     log_info("Restart CoAP connection!");
     env->expecting_heartbeat = 0;
     env->reset_connection_flag = 0;
-    map_deinit(&env->pending_heartbeat_map);
-    map_init(&env->pending_heartbeat_map);
+    map_deinit(&env->pending_request_map);
+    map_init(&env->pending_request_map);
     check_valid(connect_signal_channel(env), "connect_signal_channel() failed!");
 }
 

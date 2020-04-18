@@ -14,7 +14,7 @@ dots_task_env* dots_new_env(coap_context_t* ctx, coap_session_t* sess) {
     result->heartbeat_interval = 1; // Every second by default
     result->expecting_heartbeat = 0;
 
-    map_init(&result->pending_heartbeat_map);
+    map_init(&result->pending_request_map);
     return result;
 }
 

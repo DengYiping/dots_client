@@ -11,6 +11,8 @@
 #include "task_env.h"
 #include "preconditions.h"
 #include "utils.h"
+#include "requester.h"
+#include "dots_code.h"
 
 #define CBOR_HEARTBEAKT_KEY 49
 #define CBOR_PEER_HB_STATUS_KEY 51
@@ -43,7 +45,7 @@ static pthread_t heartbeat_thread = NULL;
    MUST NOT have a 'cuid', 'cdid,' or 'mid' Uri-Path.
  */
 // Tested
-static void create_cbor_heartbeat(uint8_t **buffer_ptr, size_t *len_ptr) {
+static cbor_item_t *create_cbor_heartbeat() {
     cbor_item_t *nested = cbor_new_definite_map(1);
     cbor_map_add(nested, (struct cbor_pair) {
             .key = cbor_move(cbor_build_uint8(CBOR_PEER_HB_STATUS_KEY)),
@@ -54,11 +56,16 @@ static void create_cbor_heartbeat(uint8_t **buffer_ptr, size_t *len_ptr) {
             .key = cbor_move(cbor_build_uint8(CBOR_HEARTBEAKT_KEY)),
             .value = cbor_move(nested)
     });
-    size_t new_len = cbor_serialize_alloc(root, buffer_ptr, len_ptr);
-    if (new_len != *len_ptr) {
-        *len_ptr = new_len;
+    return root;
+}
+
+static void heartbeat_request_response_callback(coap_pdu_t *pdu, dots_task_env *env) {
+    env->expecting_heartbeat = env->expecting_heartbeat - 1;
+    log_debug("Received heartbeat request response! Pending heartbeat: %i", env->expecting_heartbeat);
+    if (pdu->code != ResponseChanged) {
+        log_warn("Server is reporting to heartbeat incorrectly with response code %s!",
+                 coap_response_phrase(pdu->code));
     }
-    cbor_decref(&root);
 }
 
 // Tested
@@ -103,6 +110,10 @@ int validate_cbor_heartbeat_body(uint8_t *buffer, size_t len) {
     return 1;
 }
 
+static void heartbeat_send_callback(coap_pdu_t *pdu, dots_task_env *env) {
+    dots_describe_pdu(pdu);
+}
+
 // Tested
 static void heartbeat_send(dots_task_env *env) {
     if (!env->curr_sess) {
@@ -118,39 +129,16 @@ static void heartbeat_send(dots_task_env *env) {
     }
 
     log_debug("Sending a heartbeat using session %p!", env->curr_sess);
-    uint8_t *buffer;
-    size_t buffer_len;
-    create_cbor_heartbeat(&buffer, &buffer_len);
-    check_valid(buffer, "Unable to deserialize heartbeat payload");
-    uint16_t message_id = coap_new_message_id(env->curr_sess);
-    unsigned char buf[3];
-
-    coap_pdu_t *pdu = coap_pdu_init(
-            COAP_MESSAGE_NON,
-            COAP_REQUEST_PUT,
-            message_id,
-            coap_session_max_pdu_size(env->curr_sess));
-    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH_WELL_KNOWN), HB_REQUEST_PATH_WELL_KNOWN);
-    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH_DOTS), HB_REQUEST_PATH_DOTS);
-    coap_add_option(pdu, COAP_OPTION_URI_PATH, strlen(HB_REQUEST_PATH_HB), HB_REQUEST_PATH_HB);
-    coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, coap_encode_var_bytes(buf, COAP_MEDIATYPE_APPLICATION_CBOR), buf);
-
-    coap_add_data(pdu, buffer_len, buffer);
-
-    dots_describe_pdu(pdu);
-
-    char map_key[64];
-    memset(map_key, 0, sizeof(map_key));
-    sprintf(map_key, "%d", pdu->tid);
-
-    coap_send(env->curr_sess, pdu);
-    map_set(&env->pending_heartbeat_map, map_key, 1);
-
-    free(buffer);
+    send_dots_request(
+            HB_REQUEST,
+            create_cbor_heartbeat(),
+            env,
+            heartbeat_send_callback,
+            heartbeat_request_response_callback);
 }
 
 static void active_heartbeat_runnable(dots_task_env *env) {
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
     while (1) {
         sleep(env->heartbeat_interval);
         heartbeat_send(env);
@@ -172,5 +160,3 @@ void stop_heartbeat() {
         pthread_cancel(heartbeat_thread);
     }
 }
-
-
