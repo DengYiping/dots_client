@@ -9,8 +9,11 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <cbor.h>
+#include <unistd.h>
+#include <pthread.h>
+#include "errno.h"
 
-dots_task_env* connect_signal_channel(dots_task_env *env);
+dots_task_env *connect_signal_channel(dots_task_env *env);
 
 void restart_connection(dots_task_env *env) {
     log_info("Restart CoAP connection!");
@@ -21,7 +24,7 @@ void restart_connection(dots_task_env *env) {
     check_valid(connect_signal_channel(env), "connect_signal_channel() failed!");
 }
 
-coap_address_t*
+coap_address_t *
 resolve_address(const char *host, const char *service) {
     log_debug("Resolving address %s with port %s", host, service);
 
@@ -58,7 +61,7 @@ resolve_address(const char *host, const char *service) {
     return dst;
 }
 
-void dots_describe_pdu(coap_pdu_t* pdu) {
+void dots_describe_pdu(coap_pdu_t *pdu) {
     if (log_get_level() <= LOG_LEVEL_DEBUG) {
         printf("-----PDU-------\n");
         coap_show_pdu(LOG_DEBUG, pdu);
@@ -77,4 +80,47 @@ void dots_describe_pdu(coap_pdu_t* pdu) {
         printf("-----PDU-------\n");
         fflush(stdout);
     }
+}
+
+typedef struct delayed_run_args {
+    long delay_time_milli;
+    delayed_runnable_t runnable;
+    void *task_args;
+} delayed_run_args;
+
+static int msleep(long msec) {
+    struct timespec ts;
+    int res;
+
+    if (msec < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res && errno == EINTR);
+
+    return res;
+}
+
+static void delayed_run_helper(delayed_run_args *args) {
+    msleep(args->delay_time_milli);
+    (args->runnable)(args->task_args);
+    free(args);
+}
+
+void delayed_run(delayed_runnable_t runnable, long delay_time_milli, void *task_args) {
+    delayed_run_args *args = malloc(sizeof(delayed_run_args));
+    args->runnable = runnable;
+    args->delay_time_milli = delay_time_milli;
+    args->task_args = task_args;
+    pthread_t delayed_thread;
+    check_valid(
+            !pthread_create(&delayed_thread, NULL, delayed_run_helper, args),
+            "Cannot create a new thread!");
+    pthread_detach(delayed_thread);
 }

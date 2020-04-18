@@ -8,6 +8,7 @@
 #include <cbor.h>
 #include <coap2/coap.h>
 #include "task_env.h"
+#include "link_list.h"
 
 enum {
     HB_REQUEST, MITIGATION_REQUEST, CONFIG_REQUEST
@@ -19,6 +20,7 @@ void send_dots_request(
         int request_type,
         cbor_item_t *payload,
         dots_task_env* env,
+        list_node* extra_uris,
         send_dots_request_callback callback,
         receive_dots_response_callback response_callback);
 

@@ -133,6 +133,7 @@ static void heartbeat_send(dots_task_env *env) {
             HB_REQUEST,
             create_cbor_heartbeat(),
             env,
+            NULL,
             heartbeat_send_callback,
             heartbeat_request_response_callback);
 }

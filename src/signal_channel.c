@@ -11,6 +11,7 @@
 #include "task_env.h"
 #include "utils.h"
 #include "heartbeat.h"
+#include "mitigation.h"
 
 static coap_dtls_pki_t* load_pki_setup_data() {
     static coap_dtls_pki_t *setup_data = NULL;
@@ -164,5 +165,6 @@ dots_task_env *connect_signal_channel(dots_task_env *old_env) {
     register_client_handlers(ctx);
 
     start_heartbeat(env);
+    delayed_run(send_mitigation_request, 10000, env);
     return env;
 }

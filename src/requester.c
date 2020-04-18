@@ -10,7 +10,7 @@ static const char *const REQUEST_PATH_DOTS = "dots";
 
 static const char *REQUEST_TYPE_TO_REQUEST_SUFFIX[] = {
         [HB_REQUEST] = "hb",
-        [MITIGATION_REQUEST] = "mitigation",
+        [MITIGATION_REQUEST] = "mitigate",
         [CONFIG_REQUEST] = "config"
 };
 
@@ -18,6 +18,7 @@ void send_dots_request(
         int request_type,
         cbor_item_t *payload,
         dots_task_env* env,
+        list_node* extra_uris,
         send_dots_request_callback callback,
         receive_dots_response_callback response_callback) {
     coap_session_t* session = env->curr_sess;
@@ -43,6 +44,20 @@ void send_dots_request(
             COAP_OPTION_URI_PATH,
             strlen(REQUEST_TYPE_TO_REQUEST_SUFFIX[request_type]),
             REQUEST_TYPE_TO_REQUEST_SUFFIX[request_type]);
+    while (extra_uris != NULL) {
+        char* val = extra_uris->val;
+
+        coap_add_option(
+                pdu,
+                COAP_OPTION_URI_PATH,
+                strlen(val),
+                val);
+        list_node* cleanup_node = extra_uris;
+        extra_uris = extra_uris->next;
+
+        free(val);
+        free(cleanup_node);
+    }
     unsigned char buf[3];
     coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, coap_encode_var_bytes(buf, COAP_MEDIATYPE_APPLICATION_CBOR), buf);
     coap_add_data(pdu, payload_len, buffer_ptr);
@@ -51,10 +66,12 @@ void send_dots_request(
         callback(pdu, env);
     }
 
-    char map_key[64];
-    memset(map_key, 0, sizeof(map_key));
-    sprintf(map_key, "%d", pdu->tid);
-    map_set(&env->pending_request_map, map_key, response_callback);
+    if (response_callback != NULL) {
+        char map_key[64];
+        memset(map_key, 0, sizeof(map_key));
+        sprintf(map_key, "%d", pdu->tid);
+        map_set(&env->pending_request_map, map_key, response_callback);
+    }
 
     coap_send(session, pdu);
     free(buffer_ptr);
