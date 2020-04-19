@@ -56,7 +56,7 @@ JSON_TO_CBOR_MAPPER = {
     'peer-hb-status': 51
 }
 
-CBOR_TO_JSON_MAPPER = {v:k for k, v in JSON_TO_CBOR_MAPPER}
+CBOR_TO_JSON_MAPPER = {v:k for k, v in JSON_TO_CBOR_MAPPER.items()}
 
 def main():
     parser = ArgumentParser(description='Convert DOTS json payload to DOTS cbor payload')
@@ -71,7 +71,7 @@ def main():
 def to_cbor(json_file, output_file):
     print('Converting to cbor')
     with open(json_file, 'r') as fi:
-        with open(output_file, 'rb') as fo:
+        with open(output_file, 'wb') as fo:
             dic = json.load(fi)
             dic_mapped = replace_dict_key_recursively(dic, JSON_TO_CBOR_MAPPER)
             cbor.dump(dic_mapped, fo)
@@ -79,7 +79,7 @@ def to_cbor(json_file, output_file):
 def to_json(cbor_file, output_file):
     print('Converting to json')
     with open(cbor_file, 'rb') as fi:
-        with open(output_file, 'r') as fo:
+        with open(output_file, 'w') as fo:
             dic = cbor.load(fi)
             dic_mapped = replace_dict_key_recursively(dic, CBOR_TO_JSON_MAPPER)
             json.dump(dic_mapped, fo)
