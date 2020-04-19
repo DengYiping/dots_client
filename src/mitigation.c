@@ -53,6 +53,12 @@ static cbor_item_t *generate_mitigation_request_body() {
 static void request_response_callback(coap_pdu_t *pdu, dots_task_env *env) {
     if (pdu->code == COAP_RESPONSE_200) {
         log_info("Successfully handled the mitigation requests!");
+    } else {
+        uint8_t* buf;
+        size_t len;
+        if (coap_get_data(pdu, &len, &buf)) {
+            log_warn("Unsuccessful request response %s", buf);
+        }
     }
     dots_describe_pdu(pdu);
 }
