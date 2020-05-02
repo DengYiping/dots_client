@@ -11,12 +11,7 @@ automake
 curl
 ```
 
-And run the following command:
-```
-mkdir code
-cd code
-
-```
+We need to change the types.h file.
 
 To compile libcoap, we do:
 ```
