@@ -17,3 +17,12 @@ mkdir code
 cd code
 
 ```
+
+To compile libcoap, we do:
+```
+./autogen.sh
+CFLAGS=-fPIC LDFLAGS=-fPIC ./configure --with-tinydtls --with-gnu-ld --disable-documentation
+chmod +x install-sh
+make
+make install
+```
